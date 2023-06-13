@@ -1,4 +1,4 @@
-/**
+/*
  *  Author: Justin Brown for UMass/Springboard Bootcamp
  *  Assignment: API Practice: TV Maze
  *  In this exercise, you’ll finish a partially-complete web app which is a front-end for the TVMaze API.
@@ -120,7 +120,6 @@ async function getShowsByTerm(term) {
   let formattedTerm = term.toLowerCase().replace(/ /g, "%20");
 
   const response = await axios.get("https://api.tvmaze.com/search/shows?q="+formattedTerm);
-  console.log(response.data);
 
   let shows = [];
   for (let i = 0; i < response.data.length; i++) {
@@ -140,7 +139,7 @@ async function getShowsByTerm(term) {
   return shows;
 }
 
-// Given list of shows, create markup for each and to DOM
+// Given list of shows, create markup for each and add them to the DOM
 function populateShows(shows) {
   $showsList.empty();
 
@@ -185,35 +184,55 @@ $searchForm.on("submit", async function (evt) {
   evt.preventDefault();
   await searchForShowAndDisplay();
 });
-/** 
-$("#showsList").on('click', 'button', function() {
-  let id = $(this)[0].id;
-  console.log("data-show-id="+id);
-  $("div[data-show-id="+id+"] #episodesArea").css('display', 'none');
-});*/
 
 // Toggles visibility of a show's Episodes section on button click
 $("#showsList").on('click', 'button', function() {
   let id = $(this)[0].id;
-  console.log(id);
+  const $showEpisodeArea = $("div[data-show-id="+id+"] .episodes");
 
-  if ($("div[data-show-id="+id+"] .episodes").attr("data-hidden") === "true") {
-    $("div[data-show-id="+id+"] .episodes").css('display', 'inherit');
-    $("div[data-show-id="+id+"] .episodes").attr("data-hidden", "false");
+  if ($showEpisodeArea.attr("data-hidden") === "true") {
+    if ($("div[data-show-id="+id+"] li").length === 0) {
+      // get episodes
+      searchForEpisodesAndDisplay(id, $("div[data-show-id="+id+"] ul"));
+    }
+    $showEpisodeArea.css('display', 'inherit');
+    $showEpisodeArea.attr("data-hidden", "false");
   } else {
-    $("div[data-show-id="+id+"] .episodes").css('display', 'none');
-    $("div[data-show-id="+id+"] .episodes").attr("data-hidden", "true");
+    $showEpisodeArea.css('display', 'none');
+    $showEpisodeArea.attr("data-hidden", "true");
   }
 });
 
 // Given a show ID, get from API and return (promise) array of episodes:
 // { id, name, season, number }
 async function getEpisodesOfShow(id) {
+  const response = await axios.get("https://api.tvmaze.com/shows/"+id+"/episodes");
+
+ let episodes = [];
+  for (let i = 0; i < response.data.length; i++) {
+    episodes[i] = { 
+      id: response.data[i].id,
+      name: response.data[i].name,
+      season: response.data[i].season,
+      number: response.data[i].number,
+    }
+  }
+  return episodes;
+}
+
+// Given list of shows and correct UL, create markup for each and add them to the DOM
+function populateEpisodes(episodes, $episodeHolder) {
+  for (let ep of episodes) {
+    const $episodeLi = $(`<li><small>S${ep.season}E${ep.number}: ${ep.name}</small></li>`);
+    $episodeHolder.append($episodeLi);
+  }
+
 
 }
 
-/**  Write a clear docstring for this function... */
-function populateEpisodes(episodes) {
+// Handles waiting for promise to return with list of episodes from API and display it
+async function searchForEpisodesAndDisplay(id, $episodeHolder) {
+  const eps = await getEpisodesOfShow(id);
 
+  populateEpisodes(eps, $episodeHolder);
 }
-
